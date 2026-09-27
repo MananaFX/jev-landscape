@@ -1,0 +1,42 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1040 300" role="img" aria-labelledby="title desc">
+  <title id="title">SemIf 的答案码 logits 读出</title>
+  <desc id="desc">把邮件、问题和三个带 A B C 答案码的候选送入冻结 LLM；在 Answer 位置从原 LM 输出层选出 A B C 的 logits，经 softmax 得到三个业务候选的概率。</desc>
+  <defs>
+    <marker id="arrow" markerWidth="10" markerHeight="10" refX="8" refY="5" orient="auto"><path d="M1 1L9 5L1 9" fill="none" stroke="#4b6381" stroke-width="1.7"/></marker>
+    <style>
+      .bg{fill:#f6f9fd}.box{fill:#fff;stroke:#b9cce2;stroke-width:1.5}.focus{fill:#eaf2ff;stroke:#4282cf;stroke-width:1.7}.result{fill:#edf8f4;stroke:#37a381;stroke-width:1.7}.arrow{stroke:#4b6381;stroke-width:2;fill:none;marker-end:url(#arrow)}.title{font:700 19px -apple-system,BlinkMacSystemFont,"PingFang SC","Microsoft YaHei",sans-serif;fill:#183454}.sub{font:14px -apple-system,BlinkMacSystemFont,"PingFang SC","Microsoft YaHei",sans-serif;fill:#48617d}.body{font:16px -apple-system,BlinkMacSystemFont,"PingFang SC","Microsoft YaHei",sans-serif;fill:#203953}.mono{font:15px ui-monospace,SFMono-Regular,Menlo,Consolas,monospace;fill:#175bb0}.strong{font-weight:700;fill:#087b62}
+    </style>
+  </defs>
+  <rect class="bg" x="0.5" y="0.5" width="1039" height="299" rx="16" stroke="#dce6f1"/>
+  <text class="title" x="28" y="39">SemIf：读答案位置的原 LM logits</text>
+  <text class="sub" x="28" y="62">同一请求，三个候选；底座冻结，只有 A / B / C 是内部单 token 答案码</text>
+
+  <rect class="box" x="28" y="88" width="224" height="172" rx="12"/>
+  <text class="title" x="45" y="117">输入 prompt</text>
+  <text class="body" x="45" y="147">重复扣款，要求退款</text>
+  <text class="body" x="45" y="174">哪个部门处理？</text>
+  <text class="mono" x="45" y="204">A billing</text>
+  <text class="mono" x="45" y="226">B shipping</text>
+  <text class="mono" x="45" y="248">C returns</text>
+
+  <path class="arrow" d="M255 174H287"/>
+  <rect class="box" x="292" y="105" width="162" height="138" rx="12"/>
+  <text class="title" x="311" y="136">冻结 LLM</text>
+  <text class="body" x="311" y="174">一次前向</text>
+  <text class="mono" x="311" y="210">Answer: ▌</text>
+
+  <path class="arrow" d="M458 174H490"/>
+  <rect class="focus" x="495" y="88" width="241" height="172" rx="12"/>
+  <text class="title" x="512" y="117">原 LM 输出层</text>
+  <text class="body" x="512" y="151">全词表 logits 中</text>
+  <text class="body" x="512" y="178">只取三个答案码：</text>
+  <text class="mono" x="512" y="213">logit(A), logit(B),</text>
+  <text class="mono" x="512" y="237">logit(C)</text>
+
+  <path class="arrow" d="M740 174H772"/>
+  <rect class="result" x="777" y="88" width="233" height="172" rx="12"/>
+  <text class="title" x="794" y="117">候选 softmax</text>
+  <text class="body strong" x="794" y="158">billing　 0.80</text>
+  <text class="body" x="794" y="191">shipping　0.10</text>
+  <text class="body" x="794" y="224">returns　 0.10</text>
+</svg>
