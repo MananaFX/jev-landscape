@@ -1,0 +1,50 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1080 345" role="img" aria-labelledby="title desc">
+  <title id="title">Kev 的 Pointer Head 读出</title>
+  <desc id="desc">邮件、问题和每个候选文本送入带 LoRA 的 LLM；决定标记的隐藏状态投影为一个 query，每个候选结束标记的隐藏状态投影为 key；query 与各 key 点积后经 softmax 得到概率。</desc>
+  <defs>
+    <marker id="arrow" markerWidth="10" markerHeight="10" refX="8" refY="5" orient="auto"><path d="M1 1L9 5L1 9" fill="none" stroke="#4b6381" stroke-width="1.7"/></marker>
+    <style>
+      .bg{fill:#f6f9fd}.box{fill:#fff;stroke:#b9cce2;stroke-width:1.5}.query{fill:#eaf2ff;stroke:#4282cf;stroke-width:1.7}.keys{fill:#fff1e7;stroke:#d4894a;stroke-width:1.7}.result{fill:#edf8f4;stroke:#37a381;stroke-width:1.7}.arrow{stroke:#4b6381;stroke-width:2;fill:none;marker-end:url(#arrow)}.title{font:700 19px -apple-system,BlinkMacSystemFont,"PingFang SC","Microsoft YaHei",sans-serif;fill:#183454}.sub{font:14px -apple-system,BlinkMacSystemFont,"PingFang SC","Microsoft YaHei",sans-serif;fill:#48617d}.body{font:16px -apple-system,BlinkMacSystemFont,"PingFang SC","Microsoft YaHei",sans-serif;fill:#203953}.mono{font:15px ui-monospace,SFMono-Regular,Menlo,Consolas,monospace;fill:#175bb0}.orange{fill:#aa5d24}.strong{font-weight:700;fill:#087b62}
+    </style>
+  </defs>
+  <rect class="bg" x="0.5" y="0.5" width="1079" height="344" rx="16" stroke="#dce6f1"/>
+  <text class="title" x="28" y="38">Kev：候选向量与决策向量经 Pointer Head 打分</text>
+  <text class="sub" x="28" y="60">同一封邮件；业务键和候选说明可为多 token，不经过 LM 词表的答案码 logits</text>
+
+  <rect class="box" x="28" y="86" width="252" height="226" rx="12"/>
+  <text class="title" x="45" y="115">输入序列</text>
+  <text class="body" x="45" y="145">重复扣款，要求退款</text>
+  <text class="body" x="45" y="173">哪个部门处理？</text>
+  <text class="mono" x="45" y="207">billing　 &lt;/opt&gt;</text>
+  <text class="mono" x="45" y="235">shipping &lt;/opt&gt;</text>
+  <text class="mono" x="45" y="263">returns　 &lt;/opt&gt;</text>
+  <text class="mono" x="45" y="291">&lt;decide&gt;</text>
+
+  <path class="arrow" d="M283 197H319"/>
+  <rect class="box" x="324" y="123" width="153" height="147" rx="12"/>
+  <text class="title" x="342" y="153">LLM + LoRA</text>
+  <text class="body" x="342" y="189">一次编码</text>
+  <text class="body" x="342" y="222">取 4 个位置的</text>
+  <text class="body" x="342" y="246">隐藏状态</text>
+
+  <path class="arrow" d="M480 170H528V137H548"/>
+  <path class="arrow" d="M480 220H528V246H548"/>
+  <rect class="query" x="553" y="93" width="222" height="89" rx="12"/>
+  <text class="title" x="571" y="123">决策 query</text>
+  <text class="mono" x="571" y="154">h(&lt;decide&gt;) → Wq</text>
+
+  <rect class="keys" x="553" y="201" width="222" height="111" rx="12"/>
+  <text class="title" x="571" y="231">候选 keys</text>
+  <text class="mono orange" x="571" y="261">h(&lt;/opt&gt;ᵢ) → Wk</text>
+  <text class="sub" x="571" y="289">每个候选一个 key</text>
+
+  <path class="arrow" d="M779 137H816V174H835"/>
+  <path class="arrow" d="M779 256H816V218H835"/>
+  <rect class="result" x="840" y="86" width="210" height="226" rx="12"/>
+  <text class="title" x="857" y="115">Pointer Head</text>
+  <text class="mono" x="857" y="149">scoreᵢ = q · keyᵢ</text>
+  <text class="body" x="857" y="179">softmax 后：</text>
+  <text class="body strong" x="857" y="215">billing　 0.80</text>
+  <text class="body" x="857" y="246">shipping　0.10</text>
+  <text class="body" x="857" y="277">returns　 0.10</text>
+</svg>
