@@ -1,0 +1,182 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="color-scheme" content="light">
+  <meta name="description" content="Jev 风格开源决策模型的概率读取、动态分类头、训练数据、RLCD 实验与校准方法综述。">
+  <title>Jev 开源实现综述</title>
+  <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'%3E%3Crect width='64' height='64' rx='14' fill='%2314253d'/%3E%3Cpath d='M18 19h28M18 32h19M18 45h28' stroke='%2387baff' stroke-width='6' stroke-linecap='round'/%3E%3Ccircle cx='45' cy='32' r='6' fill='%23fff'/%3E%3C/svg%3E">
+  <style>
+    :root { color-scheme: light; --ink:#17273d; --muted:#586a7f; --line:#dce4ee; --blue:#175bb0; --paper:#fff; --bg:#f4f7fb; }
+    * { box-sizing:border-box; }
+    html { scroll-behavior:smooth; }
+    body { margin:0; background:var(--bg); color:var(--ink); font:16px/1.72 -apple-system,BlinkMacSystemFont,"Segoe UI","PingFang SC","Microsoft YaHei",sans-serif; }
+    a { color:var(--blue); text-underline-offset:.2em; }
+    a:hover { color:#0c3a78; }
+    .top { background:#14253d; color:#f5f9ff; border-bottom:3px solid #7caff5; }
+    .top-inner { max-width:1240px; margin:auto; padding:13px 28px; display:flex; align-items:center; justify-content:space-between; gap:20px; }
+    .brand { font-size:.92rem; font-weight:750; letter-spacing:.025em; }
+    .top a { color:#c8ddf9; font-size:.88rem; }
+    .layout { max-width:1240px; margin:0 auto; padding:34px 28px 80px; display:grid; grid-template-columns:235px minmax(0,1fr); gap:38px; align-items:start; }
+    .sidebar { position:sticky; top:22px; max-height:calc(100vh - 44px); overflow:auto; padding:18px 16px; border:1px solid var(--line); border-radius:12px; background:var(--paper); }
+    .sidebar-label { margin:0 0 12px; font-size:.76rem; color:var(--muted); text-transform:uppercase; letter-spacing:.09em; font-weight:750; }
+    .sidebar nav { display:grid; gap:3px; }
+    .sidebar nav a { display:block; padding:6px 8px; color:#38516e; border-radius:7px; font-size:.89rem; text-decoration:none; line-height:1.4; }
+    .sidebar nav a:hover { background:#eaf2fd; color:#124982; }
+    .article { min-width:0; background:var(--paper); border:1px solid var(--line); border-radius:14px; padding:40px clamp(24px,5vw,64px) 64px; box-shadow:0 5px 26px rgba(22,44,73,.04); }
+    h1,h2,h3 { color:#10233d; line-height:1.32; letter-spacing:-.025em; }
+    h1 { margin:0 0 12px; font-size:clamp(2rem,3.7vw,2.8rem); }
+    h2 { font-size:1.55rem; margin:2.8em 0 .8em; padding-top:.15em; border-bottom:1px solid var(--line); padding-bottom:.42em; scroll-margin-top:20px; }
+    h3 { font-size:1.15rem; margin:2em 0 .5em; }
+    p { margin:0 0 1.1em; }
+    h1 + p { color:var(--muted); font-size:.95rem; margin-bottom:2em; }
+    ul,ol { padding-left:1.5em; margin:0 0 1.25em; }
+    li { margin:.33em 0; }
+    blockquote { margin:1.5em 0; padding:10px 20px; border-left:4px solid #5a94dc; background:#edf4fd; border-radius:0 7px 7px 0; color:#304963; }
+    blockquote p:last-child { margin-bottom:0; }
+    table { display:block; width:100%; overflow-x:auto; border-collapse:collapse; white-space:normal; margin:1.4em 0 1.8em; font-size:.9rem; line-height:1.5; }
+    th,td { border:1px solid var(--line); padding:10px 12px; min-width:110px; vertical-align:top; }
+    th { background:#edf3fa; color:#233c59; font-weight:700; text-align:left; }
+    tr:nth-child(even) td { background:#fafcff; }
+    code { font:.9em/1.5 ui-monospace,SFMono-Regular,Menlo,Consolas,monospace; background:#eef3f8; padding:.13em .35em; border-radius:4px; }
+    pre { padding:18px 20px; overflow:auto; border-radius:9px; background:#17283d; color:#ebf3fb; font-size:.88rem; line-height:1.55; }
+    pre code { background:none; padding:0; color:inherit; }
+    article img { display:block; max-width:100%; height:auto; margin:1.5em auto .4em; border-radius:8px; }
+    article p:has(> img[src$="-readout.svg"]) { max-width:100%; overflow-x:auto; margin:1.35em 0 .4em; border-radius:8px; }
+    article img[src="./figures/semif-readout.svg"] { width:1040px; max-width:none; margin:0; }
+    article img[src="./figures/kev-readout.svg"] { width:1080px; max-width:none; margin:0; }
+    .math-display { margin:1.35em 0; padding:10px 0; overflow-x:auto; text-align:center; }
+    .math-display math { font-size:1.17rem; }
+    strong { color:#122944; }
+    .footer { max-width:1240px; padding:0 28px 35px; margin:auto; color:var(--muted); font-size:.85rem; }
+    @media (max-width:850px) { .layout { grid-template-columns:1fr; gap:18px; padding:20px 14px 50px; } .sidebar { position:static; max-height:none; padding:13px; } .sidebar nav { display:flex; overflow:auto; white-space:nowrap; } .sidebar nav a { flex:none; } .article { padding:28px 20px 44px; } .top-inner { padding:12px 16px; } h2 { margin-top:2.2em; } }
+    @media (max-width:520px) { .top-inner { align-items:flex-start; flex-direction:column; gap:2px; } .article { padding:24px 16px 38px; } table { font-size:.84rem; } th,td { padding:8px 9px; } }
+  </style>
+</head>
+<body>
+  <header class="top"><div class="top-inner"><span class="brand">Jev 开源实现综述</span><a href="./report.md">查看 Markdown 原文</a></div></header>
+  <div class="layout">
+    <aside class="sidebar" aria-label="文章目录"><p class="sidebar-label">目录</p><nav><a href="#section-1">一、Jev 概念与官方效果</a><a href="#section-2">二、开源概率读出方案</a><a href="#section-3">三、业务落地</a></nav></aside>
+    <main class="article"><article><h1>Jev 风格决策模型：SemIf 与 Kev 的概率读出</h1>
+<p>资料核对：2026-09-28。本文讨论文本输入；TypeSafe <a href="https://docs.typesafe.ai/concepts/system-one">文档</a>注明 Jev 当前尚未提供音频、图像或视频输入。官方产品说明、第三方 API 探测和开源仓库分别标明来源。</p>
+<p>贯穿全文的例子是一封客户邮件：“同一笔订单被扣款两次，希望退款。”问题是“应由哪个部门处理？”，运行时候选为 <code>billing</code>、<code>shipping</code> 和 <code>returns</code>，每个候选还可以带一段说明。目标输出是一组相加为 1 的候选概率。</p>
+<h2 id="section-1">一、Jev 概念与官方效果</h2>
+<p>Jev 是 TypeSafe 发布的首个 System One 决策模型。<a href="https://docs.typesafe.ai/concepts/system-one">官方文档</a>规定：输入共享 <code>state</code>、一个或多个问题及其合法候选，直接返回 <code>choice</code>、<code>noul</code>（是/否）或 <code>score</code>（有序等级）的结构化概率。下面按答案如何产生、模型如何训练、概率如何校准三条线看官方效果与公开复现。</p>
+<h3>1. 答案生成：直接读取候选分布</h3>
+<p>通常的 LLM 分类把邮件、问题和候选写进 prompt，再逐 token 生成 <code>{&quot;department&quot;: &quot;billing&quot;}</code>。约束解码能保证格式，但单次生成只给出一个标签；若要完整分布，还需读取答案 token 的 logprobs 或逐候选评分。Jev 的接口一次返回每个合法候选的概率，且可在同一请求中回答多个问题。<a href="https://typesafe.ai/blog/introducing-system-one-models-and-jev">TypeSafe 发布文章</a>报告端到端延迟约 <strong>70–500 ms</strong>，在所展示任务中速度约快 <strong>40–200 倍</strong>；其中短状态的 side-by-side 演示对 Jev 有利。</p>
+<p><a href="https://archerhume.com/posts/jevs-architecture-unmasked">Archer Hume 的 API 探测</a>观察到：问题之间在行为上隔离、都能读取共享 <code>state</code>；增加无关候选也会改变原候选间的相对概率。这支持“共享状态—问题分支—候选读出”的重建方向，但未确定内部 attention、固定槽位还是 pointer head。对应的公开路线包括 <a href="https://github.com/TheoLeeCJ/SemIf">SemIf</a> 与 <a href="https://github.com/bespokelabsai/nimble">Nimble</a> 的答案 token logits、<a href="https://github.com/jaredpalmer/kev">Kev</a> 的候选向量 pointer，以及 <a href="https://github.com/TianyuCodings/NanoJev">NanoJev</a> 的候选集合交互；它们均不能被认定为官方 Jev 架构。</p>
+<h3>2. 模型训练：学习决策能力</h3>
+<p><a href="https://docs.typesafe.ai/introduction/machine-learning-primer">TypeSafe 的 RLCD 说明</a>将 <strong>Reinforcement Learning for Calibrated Decisions</strong> 用于同时提升决策质量和概率质量：模型既要选对，也要让“报 80% 的判断”在同类样本中大约八成正确，以便设置自动处理阈值。官方公布的整体效果是：在其展示的 System One 任务上，Jev 达到与前沿 LLM 相近的能力。<a href="https://typesafe.ai/blog/introducing-system-one-models-and-jev">多问题工作流评测</a>以 GPT-6 Astra 与 Fable 5.1 的平均预测为参考，衡量与参考分布的一致程度；这不是对真实结果频率的校准检验，也不能把结果单独归因于 RLCD。官方没有公开足以复现的奖励函数、数据配比和优化细节。</p>
+<p><img src="https://framerusercontent.com/images/z4Uu1YpJeEZPBSMTCMI0CN2PX0.png" alt="TypeSafe 官方工作流评测图"></p>
+<p><em>图源：<a href="https://typesafe.ai/blog/introducing-system-one-models-and-jev">TypeSafe 发布文章的 Workflow evals</a>；这里关注任务表现与速度。</em></p>
+<p>开源训练可按读出和优化方式看：<a href="https://github.com/Mapika/decider">Decider</a>等在受限答案 token logits 上做 SFT 或蒸馏；同类读出的 <a href="https://github.com/bespokelabsai/nimble/blob/main/README.md#finetuning">Nimble</a>用合成的事实翻转样本和硬标签交叉熵训练 Qwen3.5-9B LoRA，明确没有从 Jev 蒸馏。<a href="https://github.com/jaredpalmer/kev/blob/main/kev/train.py">Kev</a>用候选交叉熵联合训练底座 LoRA 与 Pointer Head。<a href="https://github.com/NandhaKishorM/laya/blob/main/notebooks/laya_finetune_typed_decisions_2xT4_kaggle.ipynb">Laya</a>和 <a href="https://github.com/TianyuCodings/NanoJev/blob/main/docs/RLCD_EXPERIMENT.md">NanoJev</a>公开了 RLCD 风格实验，可供比较采样奖励与直接可微损失，均非官方训练配方。</p>
+<p>以 <code>billing</code> 为正确答案、候选依次为 <code>billing / shipping / returns</code> 为例：模型给出 <code>(0.8, 0.1, 0.1)</code> 时，正确候选的交叉熵损失 <code>−ln 0.8 ≈ 0.22</code>；若给出 <code>(0.1, 0.8, 0.1)</code>，损失升至 <code>−ln 0.1 ≈ 2.30</code>。Brier 损失将整组概率与正确答案向量 <code>(1, 0, 0)</code> 逐项比较、求平方和，上述两组分别为 <code>0.06</code> 和 <code>1.46</code>。两种损失面对<strong>单条独热标签</strong>时，最低点都在正确选项概率趋近 1；模型容量足够时，确实可能把训练样本学得过于肯定。</p>
+<p>但“每条样本只有一个标签”不等于真实条件概率一定是独热的。若同类输入的真实结果有 70% 属于 <code>billing</code>、30% 属于 <code>shipping</code>，在足够多同分布样本上的交叉熵最优预测是 <code>(0.7, 0.3)</code>，不是 <code>(1, 0)</code>。有限数据、重复样本不足和分布变化会使实际模型过度自信；软标签、反事实样本与后校准各自处理其中一部分问题。训练损失会更新模型或分类头，可能改变候选排序；官方是否使用上述具体损失尚未公开。</p>
+<h3>3. 概率校准：让分数可用于阈值决策</h3>
+<p>后校准的边界先说清楚：对同一道题的所有候选施加同一个正温度 <code>T</code>，只改变概率分布的集中程度，<strong>不改变候选排序，也不能修正选错的标签</strong>。</p>
+<p>对 Choice 而言，<code>P(billing | 邮件、问题、当前候选集)</code> 是一个候选的概率，整组 <code>P</code> 在候选内相加为 1。<code>confidence</code> 则是从这组概率<strong>再算出的单个集中度指标</strong>，不是对 <code>P</code> 再做一次 softmax。<a href="https://github.com/typesafe-ai/system-one-adapter-python/blob/main/src/system_one_adapter/_utils/confidence_metrics.py">TypeSafe 的开源适配器</a>对 <code>K</code> 个 Choice 候选使用 <code>(最大候选概率 − 1/K) / (1 − 1/K)</code>：三选一概率为 <code>(0.8, 0.1, 0.1)</code> 时，最高的 <code>P</code> 是 <code>0.8</code>，<code>confidence</code> 是 <code>0.7</code>；均匀分布时为 0。Score 的 <code>confidence</code> 则按概率离最可能等级的距离计算；Noul 直接给“是”的概率。它们都不额外估计“本次一定答对”。</p>
+<p><a href="https://docs.typesafe.ai/introduction/machine-learning-primer">官方 primer</a>对校准的定义是：大量被赋予 0.8 概率的事件，约有 80% 实际发生。若正确选项缺席，候选内 softmax 仍会给剩余选项分配总计 1 的概率，<code>confidence</code> 也可能很高。</p>
+<p>公开的外部检验已经有一些，但只支持<strong>在被测题目上的概率质量</strong>。<a href="https://github.com/fstandhartinger/jevbench/blob/main/docs/METHOD-v1.4.md">JevBench v1.4 方法</a>将校准列为独立评分轴；<a href="https://benchmarkheaven.com/api/jevbench/v1.4.2">v1.4.2 结果</a>给 Jev 1.13.0 的 <code>Calibration</code> <strong>76.34</strong>，这是 0–100 轴分，绝非“76.34% 的概率可信”。<a href="https://github.com/newfull5/malkuth/blob/main/docs/model-cards/malkuth-4b.md#evaluation">Malkuth 的公开对照</a>在其留出题上报告 Jev API 的多分类 Brier 为 <strong>0.355</strong>，低于同场测得的 Malkuth-4B <strong>0.385</strong>（越低越好）。<a href="https://github.com/jaredpalmer/kev#what-to-expect">Kev 的新来源评测</a>也记录到 Jev 有 <strong>3.7%</strong> 的题目以至少 0.9 的概率答错。这些评测并未证明 Jev 在任意新业务、任意阈值下都校准；尤其缺少覆盖真实业务结果的普适性验证。</p>
+<p>开源项目多在独立标注集上拟合温度，具体分组方法见第二部分第 4 节。真实答对率、领域迁移和自动执行阈值仍需用业务结果检验。</p>
+<h2 id="section-2">二、开源概率读出方案</h2>
+<h3>1. SemIf：Zero-Shot 读取答案 token logits</h3>
+<p><img src="./figures/semif-readout.svg" alt="SemIf 取概率流程：一份带 A/B/C 答案码的输入经过冻结 LLM，在答案位置读取 LM Head 的三个 logits，归一化为候选概率"></p>
+<p><em>图 1｜SemIf：从原 LM 输出层只取候选答案码的 logits。图中数字仅作流程示意。</em></p>
+<p><a href="https://github.com/TheoLeeCJ/SemIf/blob/master/docs/METHOD.md">SemIf</a>的 <strong>Zero-Shot</strong> 版本直接使用现成底座推理，不为这项任务更新模型参数。它把每个业务候选映射到一个经 tokenizer 验证的答案标记。候选说明保留在 prompt 中，可以是多 token；模型只需在答案位置给 <code>A</code>、<code>B</code>、<code>C</code> 这些单 token 打分。</p>
+<pre><code class="language-text">state:  同一笔订单被扣款两次，希望退款。
+question: 应由哪个部门处理？
+A. billing  — 付款、扣款、退款
+B. shipping — 配送、丢件
+C. returns  — 退换货
+Answer:
+
+一次 prefill → 读取 logits[A], logits[B], logits[C] → softmax
+</code></pre>
+<p>这里不需要展开 LM 输出矩阵，真正执行的读出只有一行：</p>
+<div class="math-display"><math display="block" aria-label="候选概率向量等于 A、B、C 三个答案码的 logits 经 softmax"><mrow><mi mathvariant="bold">p</mi><mo>=</mo><mi mathvariant="normal">softmax</mi><mo>(</mo><mo>[</mo><mi mathvariant="normal">logit</mi><mo>(</mo><mi>A</mi><mo>)</mo><mo>,</mo><mi mathvariant="normal">logit</mi><mo>(</mo><mi>B</mi><mo>)</mo><mo>,</mo><mi mathvariant="normal">logit</mi><mo>(</mo><mi>C</mi><mo>)</mo><mo>]</mo><mo>)</mo></mrow></math></div>
+
+<p><code>p</code> 的三个位置依次映射回 <code>billing / shipping / returns</code>。只比较这三个答案码，不让模型生成答案；后校准时才在 softmax 前统一除以温度 <code>T</code>。<a href="https://github.com/Mapika/decider/blob/main/decider/model.py#L18-L27">Decider 的 <code>slot_logits</code></a>展示了相同的读取位置与 <code>lm_head</code> 筛选方式。</p>
+<p>与让同一个 LLM 生成分类 JSON 相比，这个读出有四个直接收益：</p>
+<ol>
+<li><strong>单次前向得到完整分布</strong>。程序同时拿到所有合法候选的分数；无需让模型继续生成概率文字或反复采样。</li>
+<li><strong>输出严格落在候选集合内</strong>。程序从受限分布选标签并映射回业务键，省去自由生成标签时的拼写、别名和解析问题。</li>
+<li><strong>候选说明可自由扩展</strong>。<code>billing</code> 的描述可以是长文本；单 token 约束仅施加在内部答案标记上。</li>
+<li><strong>复用已有模型与输出层</strong>。冻结模型即可实验；服务端只需开放目标位置的 logits，推理中没有新训练的 Head。</li>
+</ol>
+<p>收益有明确边界。若 LLM 本来就被约束为只输出一个答案字母，且推理服务同时提供所有字母的 logprobs，它执行的已是同类读出；SemIf 的关键是把这一读出固定成决策接口。概率仍依赖底座、prompt、候选内容和顺序。只在当前候选集上归一化也不会发现漏掉的正确选项。<a href="https://github.com/TheoLeeCJ/SemIf/blob/master/docs/CALIBRATION.md">SemIf 的校准分析</a>讨论了温度缩放；候选顺序置换可用于检测字母位置偏好。</p>
+<h4>同类工作：同一读出，三种训练目标</h4>
+<p><strong><a href="https://github.com/Mapika/decider">Decider 4B v2</a>：先做通用覆盖，再补难题。</strong> 第一阶段在公开分类集、教师标注及可验证的程序生成题上做监督训练，让一个模型接多种决策格式；第二阶段用 LoRA 补政策规则、长文档等难题。其具体防遗忘手段是回放第一阶段数据；教师写的文档题需两次独立作答一致才收入训练。</p>
+<p><strong><a href="https://github.com/allebee/jevk5/blob/main/README.md#how-it-was-made">JevK5</a>：把训练重心直接放在困难决策。</strong> 教师生成含政策例外、日期数字陷阱、多步查找等问题的文档，并独立回答两次；答案一致才保留。用答案码交叉熵训练 LoRA，同时混入公开训练集回放，避免只会解教师题；少数有精确目标分布的题用软标签。</p>
+<p><strong><a href="https://github.com/bespokelabsai/nimble/blob/main/README.md#finetuning">Nimble</a>：专练“关键证据变了，答案就要变”。</strong> 同一道判断写成一对样本，只改动决定性的事实，标签随之翻转；标签由规则生成，不用 Jev 概率蒸馏。它只在答案码 logits 上用硬标签交叉熵训练 LoRA，并按来源家族拆分训练/测试，避免同一对反事实题泄漏到两边。</p>
+<p>三者分别瞄准<strong>任务广度、难题推理、证据敏感性</strong>；读取概率的位置没有变。<a href="https://benchmarkheaven.com/api/jevbench/v1.4.2">JevBench v1.4.2</a> 曾测试这些代表项目：Decider 4B v2、JevK5 v0.2、SemIf、Nimble 原始版的综合名次依次是第 1、3、11、60。该榜还计入成本，名次仅作外部实测背景。</p>
+<h3>2. Kev：从候选隐藏状态读取概率</h3>
+<p><img src="./figures/kev-readout.svg" alt="Kev 取概率流程：输入包含每个候选的结束标记和一个决定标记，LLM 产生对应隐藏状态，Pointer Head 用 query 与各候选 key 的点积打分并归一化"></p>
+<p><em>图 2｜Kev：<code>&lt;decide&gt;</code> 给一个 query，各 <code>&lt;/opt&gt;</code> 给候选 key；点积后再归一化。图中数字仅作流程示意。</em></p>
+<p><a href="https://github.com/jaredpalmer/kev/blob/main/kev/model.py#L82-L118">Kev 的编码</a>把共享状态、问题与每个候选文本放进模型输入。候选结束标记 <code>&lt;/opt&gt;</code> 的隐藏状态形成该候选的上下文化表示；问题末尾 <code>&lt;decide&gt;</code> 的隐藏状态汇总决策上下文。<a href="https://github.com/jaredpalmer/kev/blob/main/kev/model.py#L182-L195">PointerHead</a>通过两个可训练投影计算每个候选的分数：</p>
+<pre><code class="language-text">&lt;state&gt; 同一订单扣款两次，希望退款
+&lt;q&gt; 应由哪个部门处理？
+&lt;opt&gt; billing：付款、扣款、退款 &lt;/opt&gt;   → 候选向量 1
+&lt;opt&gt; shipping：配送、丢件 &lt;/opt&gt;       → 候选向量 2
+&lt;opt&gt; returns：退换货 &lt;/opt&gt;          → 候选向量 3
+&lt;decide&gt;                               → 决策向量
+</code></pre>
+<pre><code class="language-text">query = Wq · h(&lt;decide&gt;)
+key_i = Wk · h(&lt;/opt&gt;_i)
+logit_i = key_i · query / √d
+P(option_i) = softmax(logits/T)_i
+</code></pre>
+<p><code>&lt;decide&gt;</code> 是唯一 query，<code>&lt;/opt&gt;</code> 位置给出每个候选的 key；候选描述可以是多 token，业务键无需限定为 <code>0–9</code>。SemIf 从 LM 词表读答案码分数，Kev 从这些候选向量与决策向量的点积读分数。Kev 用正确候选的交叉熵同时训练底座 LoRA 和 Pointer Head，再在独立数据上<a href="https://github.com/jaredpalmer/kev/blob/main/scripts/calibrate_checkpoint.py">拟合温度</a>；仅在 vLLM 中动态加载 LoRA 不能执行这个独立 Head。Kev 对多个问题的隔离处理与前述 API 探测的推断相近，但不证明官方 Jev 使用了同一结构。</p>
+<h4>同类工作：一个扩语言，一个换底座</h4>
+<p><strong><a href="https://github.com/jaredpalmer/kev">Kev</a></strong> 本身用公开分类集、合成政策题和规则组合题训练底座 LoRA 与 Pointer Head；后续增加缺失关键证据和真实文档样本，目标是让同一读出头覆盖更多业务决策。</p>
+<p><strong><a href="https://github.com/newfull5/malkuth/blob/main/docs/model-cards/malkuth-4b.md">Malkuth-4B</a>：扩到多语言。</strong> 从 Kev 检查点继续训练，保留 Pointer Head；训练集换成 20 个公开来源的多语言标注，重点补韩语。它验证的是同一结构的语言迁移，而非新的取概率方式。</p>
+<p><strong><a href="https://github.com/franckverrot/lev#what-changed-from-kev">Lev-350M</a>：换到有卷积层的小底座。</strong> 复用 Kev 的训练与评测框架，但 LFM2.5-350M 的短卷积会跨问题传信息，仅靠 Kev 的 attention mask 不够；Lev 为卷积层设置每个问题自己的前驱链，保持问题隔离。这是移植 Pointer Head 时必须处理的结构差异。</p>
+<p><a href="https://benchmarkheaven.com/api/jevbench/v1.4.2">JevBench v1.4.2</a> 测试过这些代表项目：Malkuth-4B 第 16、Kev 4B 预览版第 28、Lev-350M 第 44。名次对应榜单中的具体版本，且综合分包含成本。</p>
+<h3>3. 其他实现路径</h3>
+<table>
+<thead>
+<tr>
+<th>路径</th>
+<th>候选分数的来源</th>
+<th>公开项目</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>候选集合交互</td>
+<td>各候选路径编码后经 set attention 交换信息，再由共享 Head 打分</td>
+<td><a href="https://github.com/TianyuCodings/NanoJev">NanoJev</a>；当前 JevBench 数据未收录其模型</td>
+</tr>
+<tr>
+<td>候选 marker / span</td>
+<td>编码器中每个候选前的 <code>[MASK]</code> 向量，或候选文本 span 的池化向量</td>
+<td><a href="https://huggingface.co/convaiinnovations/laya">Laya</a>、<a href="https://github.com/wfzyx/von/blob/master/src/von/models/option_marker.py">Von</a>、<a href="https://github.com/isHeSatoshi/smalljev">smalljev</a></td>
+</tr>
+<tr>
+<td>独立候选 scalar Head</td>
+<td>每个 <code>state + question + candidate</code> 序列独立编码，由共享标量 Head 打分</td>
+<td><a href="https://github.com/Zefan-Cai/Open-Jev">Zefan Open-Jev</a></td>
+</tr>
+<tr>
+<td>Reranker / embedding</td>
+<td>每候选 cross-encoder 分数，或状态与候选向量的相似度</td>
+<td><a href="https://github.com/TheoLeeCJ/SemIf/blob/master/docs/METHOD.md">SemIf rerank</a>、<a href="https://github.com/Contrastive-LM/CLM">CLM</a></td>
+</tr>
+<tr>
+<td>扩散模型读出</td>
+<td>DiffusionGemma 的去噪状态或结构化画布</td>
+<td><a href="https://github.com/Davipar/djev-dev">djev</a>、<a href="https://github.com/razorback16/openjev">OpenJev DiffusionGemma</a></td>
+</tr>
+</tbody></table>
+<p>这些方法都可以包装成“输入候选、输出概率”的 API，计算路径与训练数据却不同。Reranker 的相关性分数尤其需要针对候选决策任务重新校准。</p>
+<h3>4. 概率后校准：按什么范围拟合温度</h3>
+<p>模型训练完成后，固定参数，在与训练集分开的标注数据上选择正温度 <code>T</code>，将每题的候选 logits 统一除以 <code>T</code> 再做 softmax。<code>T &gt; 1</code> 让概率更平，<code>0 &lt; T &lt; 1</code> 让概率更尖；同题候选的第一名始终不变。公开项目主要区别在于：哪些题共用一个温度。</p>
+<p><strong>全局单温度。</strong> <a href="https://github.com/jaredpalmer/kev/blob/main/scripts/calibrate_checkpoint.py">Kev</a>为每个检查点拟合一个温度，<a href="https://github.com/allebee/jevk5/blob/main/README.md#how-it-was-made">JevK5</a>的发布版和 <a href="https://github.com/bespokelabsai/nimble/blob/main/README.md#probability-temperature">Nimble 原始版</a>也采用单温度。所有题按同一刻度调整，所需校准样本相对少。</p>
+<p><strong>按业务场景或数据域拟合。</strong> <a href="https://github.com/TheoLeeCJ/SemIf/blob/master/docs/CALIBRATION.md">SemIf</a>在不同 workload 上分别用标注集最小化负对数似然，得到各自的温度。不同业务若有明显不同的过度自信程度，可分开调整。</p>
+<p><strong>按题型或候选数分组。</strong> <a href="https://github.com/Mapika/decider/blob/main/decider/temperature.py">Decider</a>支持按 <code>choice / noul / score</code> 类型和 prompt 布局拟合；<a href="https://github.com/NandhaKishorM/laya/blob/main/research/README.md">Laya</a>实验按题型与候选数量分组。每组仍对同一道题使用同一个正温度。分组越细，越需要足够的独立标注样本，以免只贴合校准集。</p>
+<p>温度可在校准集上以负对数似然选择，再用留出的测试集检查 Brier、校准误差与高置信错误。训练集、校准集和测试集应按案例或来源隔离；温度不能补回缺失候选，也不能解决新的业务领域中的系统性误判。</p>
+<h2 id="section-3">三、业务落地</h2>
+</article></main>
+  </div>
+  <footer class="footer">资料截至 2026-09-28。仓库会继续变化，请以链接中的代码、文档和实验记录为准。</footer>
+</body>
+</html>
